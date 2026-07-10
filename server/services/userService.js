@@ -1,5 +1,5 @@
 const userRepository = require('../repositories/userRepository');
-const { hashPassword } = require('../utils/passwordHelper'); 
+const { hashPassword } = require('../utils/PasswordHelper'); 
 const { createToken } = require('../utils/jwtHelper');
 const bcrypt = require('bcryptjs');
 
