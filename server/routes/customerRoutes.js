@@ -5,7 +5,7 @@ const {
     getAllCustomersController,
     updateCustomerController,
     deleteCustomerController
-} = require('../controllers/CustomerController');
+} = require('../controllers/customerController');
 const { protect } = require('../middlewares/userMiddleware');
 const { authorizeRoles } = require('../middlewares/roleMiddleware');
 

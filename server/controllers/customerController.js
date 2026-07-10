@@ -1,5 +1,5 @@
 const asyncHandler = require('express-async-handler');
-const customerService = require('../services/CustomerService');
+const customerService = require('../services/customerService');
 
 // @desc    Create a new customer
 // @route   POST /api/customers
