@@ -17,6 +17,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../redux/slices/authSlice";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import API from "../api/axios"; 
+
 
 export default function AppBar({ title, onMenuClick }) {
   const dispatch = useDispatch();
@@ -53,11 +55,9 @@ export default function AppBar({ title, onMenuClick }) {
       setIsSearching(true);
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/dashboard/search?q=${encodeURIComponent(searchQuery)}`,
-          {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-          }
-        );
+  `http://localhost:5000/api/dashboard/search?q=${encodeURIComponent(searchQuery)}`,
+  { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+);
         setSearchResults(response.data);
       } catch (error) {
         console.error("Search failed:", error);
