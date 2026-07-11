@@ -5,6 +5,7 @@ const { protect } = require('../middlewares/userMiddleware');
 const { authorizeRoles } = require('../middlewares/roleMiddleware');
 
 router.post('/register', registerUser);
+
 router.post('/login', loginUser); 
 
 router.get('/profile', protect, getUserProfile);
