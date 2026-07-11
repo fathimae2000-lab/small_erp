@@ -1,4 +1,4 @@
-const Customer = require('../models/Customer'); // adjust path/model name if different
+const Customer = require('../models/Customer');
 
 const findAllCustomers = async () => {
     return await Customer.find();

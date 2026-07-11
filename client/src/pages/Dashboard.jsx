@@ -49,15 +49,12 @@ function StatCard({ label, value, icon: Icon, from, to, blob }) {
 export default function Dashboard() {
   const dispatch = useDispatch();
 
-  // Redux സ്റ്റേറ്റിൽ നിന്ന് ഡാറ്റ എടുക്കുന്നു
   const { data, loading, error } = useSelector((state) => state.dashboard);
 
-  // പേജ് ലോഡ് ചെയ്യുമ്പോൾ ബാക്കെൻഡ് കോൾ ചെയ്യുന്നു
   useEffect(() => {
     dispatch(fetchDashboardData());
   }, [dispatch]);
 
-  // ബാക്കെൻഡ് ഡാറ്റ സ്ട്രക്ചർ വെച്ച് കാർഡുകൾ ഡൈനാമിക് ആക്കുന്നു
   const STATS = [
     {
       label: "Total revenue",

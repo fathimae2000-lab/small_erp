@@ -58,7 +58,7 @@ export default function Inventory() {
   const [warehouse, setWarehouse] = useState("All warehouses");
   const [stockFilter, setStockFilter] = useState("All stock");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProductId, setEditingProductId] = useState(null); // null = no product pre-selected
+  const [editingProductId, setEditingProductId] = useState(null); 
 
   useEffect(() => {
     dispatch(fetchInventoryDashboard());

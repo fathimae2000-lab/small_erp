@@ -53,7 +53,7 @@ export default function AddUserModal({ isOpen, onClose }) {
       if (result.meta.requestStatus === "fulfilled") {
         alert("User created successfully!");
         setFormData({ name: "", email: "", phone: "", password: "", role: "staff" });
-        onClose(); // സക്സസ് ആയാൽ മോഡൽ ക്ലോസ് ചെയ്യും
+        onClose(); 
       }
     }
   };

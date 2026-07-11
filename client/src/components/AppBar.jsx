@@ -82,18 +82,15 @@ export default function AppBar({ title, onMenuClick }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // 3. Global keyboard shortcut — Cmd/Ctrl+K focuses search from anywhere in the app,
-  // Escape blurs/closes it. This is what makes the search "global" rather than
-  // scoped to whichever page happens to render it.
+  
   useEffect(() => {
     const handleGlobalKeydown = (event) => {
       const isShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
       if (isShortcut) {
         event.preventDefault();
-        const isMobileViewport = window.innerWidth < 640; // Tailwind's `sm` breakpoint
+        const isMobileViewport = window.innerWidth < 640; 
         if (isMobileViewport) {
           setMobileSearchOpen(true);
-          // Wait a tick for the mobile overlay to mount before focusing
           requestAnimationFrame(() => mobileSearchInputRef.current?.focus());
         } else {
           desktopSearchInputRef.current?.focus();
@@ -137,7 +134,6 @@ export default function AppBar({ title, onMenuClick }) {
     searchResults &&
     ["products", "orders", "customers", "invoices"].some((k) => searchResults[k]?.length > 0);
 
-  // Shared results dropdown, reused by both the desktop bar and the mobile overlay
   const renderResultsDropdown = () => {
     if (!searchResults) return null;
     return (
@@ -146,7 +142,6 @@ export default function AppBar({ title, onMenuClick }) {
           <p className="p-3 text-xs text-slate-400 animate-pulse text-center">Searching ERP...</p>
         ) : (
           <div className="flex flex-col gap-2">
-            {/* PRODUCTS MATCHED */}
             {searchResults.products?.length > 0 && (
               <div>
                 <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">

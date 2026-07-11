@@ -1,20 +1,18 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// 🎯 ബാക്കെൻഡ് ഡാഷ്‌ബോർഡ് API URL
-const API_URL = "http://localhost:5000/api/dashboard";
+const API_URL = `${import.meta.env.VITE_API_URL}/api/dashboard`;
 
-// 🚀 ബാക്കെൻഡിൽ നിന്ന് ഡാഷ്‌ബോർഡ് ഇൻഫോർമേഷൻ കൊണ്ടുവരാനുള്ള Async Thunk
 export const fetchDashboardData = createAsyncThunk(
   "dashboard/fetchDashboardData",
   async (_, { rejectWithValue }) => {
     try {
       const response = await axios.get(API_URL, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // ലോഗിൻ ടോക്കൺ ഉണ്ടെങ്കിൽ പാസ്സ് ചെയ്യുന്നു
+          Authorization: `Bearer ${localStorage.getItem("token")}`, 
         },
       });
-      return response.data; // ബാക്കെൻഡ് തരുന്ന റെസ്പോൺസ് ഒബ്ജക്റ്റ്
+      return response.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to load dashboard statistics"
@@ -23,7 +21,6 @@ export const fetchDashboardData = createAsyncThunk(
   }
 );
 
-// 📦 Dashboard Slice സെറ്റപ്പ്
 const dashboardSlice = createSlice({
   name: "dashboard",
   initialState: {

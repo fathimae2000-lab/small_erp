@@ -51,8 +51,7 @@ function StatCard({ label, value, icon: Icon, from, to, blob }) {
 export default function Orders() {
   const dispatch = useDispatch();
 
-  // FIX: Switched from state.orders to state.sales to match fetchOrders from saleSlice
-  // Added '= []' fallback to prevent app from crashing if orders is initially undefined
+  
   const { orders = [], loading } = useSelector((state) => state.sales);
 
   const [isModalOpen, setIsModalOpen] = useState(false);

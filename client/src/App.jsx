@@ -18,11 +18,6 @@ import Purchases from "./pages/Purchases";
 import Login from "./pages/Auth";
 import { useSelector } from "react-redux";
 
-/**
- * ProtectedRoute Component
- * Checks localStorage for authentication. If a token isn't found, 
- * it redirects the user to the login screen.
- */
 
 
 

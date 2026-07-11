@@ -1,8 +1,4 @@
-// client/src/components/Chatbot.jsx
-// Standalone floating chatbot for the ERP — fetches its own dashboard data from
-// backend (not dependent on other pages having been visited first), calls
-// /api/chat with JWT. Adapted from the CRM chatbot: same behavior/logic,
-// ERP data sources, and restyled to match the ERP's blue/cyan design system.
+
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { FiSend, FiX, FiMessageSquare, FiRefreshCw } from "react-icons/fi";

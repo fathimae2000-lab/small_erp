@@ -20,7 +20,6 @@ export default function AddProductModal({ isOpen, onClose, product = null }) {
   const [formData, setFormData] = useState(emptyForm);
   const [errors, setErrors] = useState({});
 
-  // Pre-fill form when opening in edit mode, reset when opening in add mode
   useEffect(() => {
     if (isOpen) {
       if (product) {
