@@ -12,6 +12,9 @@ const registerUser = async ({ name, email, password, role }) => {
 
     const hashedPassword = hashPassword(password);
 
+
+    
+
     return await userRepository.createUser({
         name,
         email,
