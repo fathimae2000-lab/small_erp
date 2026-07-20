@@ -7,14 +7,12 @@ const protect = asyncHandler(async (req, res, next) => {
 
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
-            token = req.headers.authorization.split(' ')[1];
+            token = req.headers.authorization; // keep header format, verifyToken handles .replace()
 
-            const decoded = await verifyToken(token);
+            const result = await verifyToken(token);
 
-            if (decoded && decoded.valid) {
-               
-                const userId = decoded.userId || decoded.id; 
-                const user = await userRepository.findUserById(userId); 
+            if (result && result.valid) {
+                const user = await userRepository.findUserById(result.userId); 
                 
                 if (!user) {
                     res.status(401);
@@ -23,6 +21,9 @@ const protect = asyncHandler(async (req, res, next) => {
 
                 req.user = user; 
                 return next(); 
+            } else {
+                res.status(401);
+                throw new Error('Not authorized, token is invalid');
             }
             
         } catch (error) {
