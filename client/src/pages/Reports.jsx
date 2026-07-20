@@ -1,270 +1,295 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchReportsData } from "../redux/slices/reportSlice"; 
-import { TrendingUp, DollarSign, ShoppingBag, Box, Download } from "lucide-react";
+import { fetchDashboardData } from "../redux/slices/dashboardSlice"; 
+import { 
+  DollarSign, 
+  ShoppingCart, 
+  Package, 
+  AlertTriangle, 
+  ChevronDown, 
+  TrendingUp, 
+  Users, 
+  Clock, 
+  Star,
+  CheckCircle,
+  XCircle,
+  Clock as ClockIcon,
+  Zap
+} from "lucide-react";
 import {
-  BarChart,
-  Bar,
   LineChart,
   Line,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
+  Area,
+  AreaChart,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  Legend
 } from "recharts";
 
-const PIE_COLORS = ["#10b981", "#f59e0b", "#f43f5e"];
+const badgeClasses = {
+  danger: "bg-red-50 text-red-700 border border-red-200",
+  warning: "bg-amber-50 text-amber-700 border border-amber-200",
+};
 
-function StatCard({ label, value, icon: Icon, from, to, blob }) {
+const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+
+function StatCard({ label, value, icon: Icon, from, to, blob, trend, trendLabel }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-transparent hover:shadow-[0_16px_32px_-10px_rgba(30,41,90,0.28)]">
+    <div className="group relative overflow-hidden rounded-xl bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
       <div
-        className="pointer-events-none absolute -right-6 -top-8 h-24 w-24 rounded-full opacity-[0.10] blur-2xl transition-opacity duration-300 group-hover:opacity-20"
+        className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-[0.04] blur-2xl transition-opacity duration-300 group-hover:opacity-10"
         style={{ backgroundColor: blob }}
       />
+
       <div className="relative flex items-start justify-between">
+        <div className="space-y-1">
+          <p className="text-xs font-medium uppercase tracking-wider text-slate-400">{label}</p>
+          <p className="text-2xl font-bold text-slate-900">{value}</p>
+          {trend && (
+            <div className="flex items-center gap-1.5">
+              <span className={`text-xs font-medium ${trend > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
+              </span>
+              <span className="text-xs text-slate-400">{trendLabel}</span>
+            </div>
+          )}
+        </div>
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-md"
-          style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}
+          className="flex h-11 w-11 items-center justify-center rounded-xl shadow-sm"
+          style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
         >
-          <Icon size={17} />
+          <Icon size={18} className="text-white" />
         </div>
       </div>
-      <p className="relative mt-3 text-[13px] text-slate-500">{label}</p>
-      <p
-        className="relative bg-clip-text text-[26px] font-semibold leading-tight text-transparent"
-        style={{ backgroundImage: `linear-gradient(90deg, ${from}, ${to})` }}
-      >
-        {value}
-      </p>
     </div>
   );
 }
 
-export default function Reports() {
+export default function Dashboard() {
   const dispatch = useDispatch();
-  const [range, setRange] = useState("Last 7 months");
 
-  const { stats, revenueData, ordersByStatus, topProducts, loading, error } = 
-    useSelector((state) => state.reports);
+  const { data, loading, error } = useSelector((state) => state.dashboard);
 
   useEffect(() => {
-    dispatch(fetchReportsData(range));
-  }, [dispatch, range]);
+    dispatch(fetchDashboardData());
+  }, [dispatch]);
 
-  // CSV Export Logic Handler
-  const exportToCSV = () => {
-    let csvContent = "data:text/csv;charset=utf-8,";
+  // Sample data for new charts
+  const orderStatusData = [
+    { name: 'Completed', value: 45, color: '#10B981' },
+    { name: 'Processing', value: 28, color: '#3B82F6' },
+    { name: 'Pending', value: 15, color: '#F59E0B' },
+    { name: 'Cancelled', value: 8, color: '#EF4444' },
+    { name: 'Refunded', value: 4, color: '#8B5CF6' },
+  ];
 
-    // 1. Core Summary Section
-    csvContent += "DASHBOARD SUMMARY METRICS\n";
-    csvContent += `Total Sales, $${stats?.totalSales?.toLocaleString() || 0}\n`;
-    csvContent += `Total Orders, ${stats?.totalOrders || 0}\n`;
-    csvContent += `Total Products, ${stats?.totalProducts || 0}\n`;
-    csvContent += `Low Stock Alerts, ${stats?.lowStockCount || 0} Items\n\n`;
+  const topProductsData = [
+    { name: 'Wireless Headphones', sales: 245, revenue: 12250 },
+    { name: 'Smart Watch', sales: 189, revenue: 9450 },
+    { name: 'Laptop Bag', sales: 156, revenue: 7800 },
+    { name: 'USB-C Hub', sales: 134, revenue: 6700 },
+    { name: 'Phone Case', sales: 98, revenue: 4900 },
+  ];
 
-    // 2. Revenue Trend Section
-    csvContent += "REVENUE TREND DATA\nTimeline Period, Revenue\n";
-    revenueData.forEach((row) => {
-      csvContent += `${row.month}, ${row.revenue}\n`;
-    });
-    csvContent += "\n";
-
-    // 3. Top Selling Products Section (ഡൈനാമിക് ഡാറ്റ എക്സ്പോർട്ട് ചെയ്യുന്നു)
-    csvContent += "TOP SELLING PRODUCTS\nProduct Name, Units Sold\n";
-    if (topProducts && topProducts.length > 0) {
-      topProducts.forEach((product) => {
-        csvContent += `"${product.name.replace(/"/g, '""')}", ${product.sold || 0}\n`;
-      });
-    }
-
-    // Create a virtual download anchor element link
-    const encodedUri = encodeURI(csvContent);
-    const downloadLink = document.createElement("a");
-    downloadLink.setAttribute("href", encodedUri);
-    downloadLink.setAttribute("download", `ERP_Dashboard_Report_${range.replace(/\s+/g, "_")}.csv`);
-    document.body.appendChild(downloadLink);
-    
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-  };
-
-  const STATS_CARDS = [
+  const STATS = [
     {
-      label: "Total Sales",
-      value: stats?.totalSales ? `$${stats.totalSales.toLocaleString()}` : "$0",
+      label: "Total Revenue",
+      value: data?.stats?.totalRevenue ? `$${data.stats.totalRevenue.toLocaleString()}` : "$0",
       icon: DollarSign,
-      from: "#2B54D6",
-      to: "#4FD5F0",
-      blob: "#2B54D6",
+      from: "#2563EB",
+      to: "#60A5FA",
+      blob: "#2563EB",
+      trend: 12.5,
+      trendLabel: "vs last month"
     },
     {
       label: "Total Orders",
-      value: stats?.totalOrders || "0",
-      icon: ShoppingBag,
-      from: "#5B3FE0",
-      to: "#8B7BFF",
-      blob: "#5B3FE0",
+      value: data?.stats?.totalOrders || "0",
+      icon: ShoppingCart,
+      from: "#7C3AED",
+      to: "#A78BFA",
+      blob: "#7C3AED",
+      trend: 8.2,
+      trendLabel: "vs last month"
     },
     {
-      label: "Total Products",
-      value: stats?.totalProducts || "0",
-      icon: Box,
-      from: "#B7791F",
-      to: "#F0B84F",
-      blob: "#B7791F",
+      label: "Products",
+      value: data?.stats?.totalProducts || "0",
+      icon: Package,
+      from: "#059669",
+      to: "#34D399",
+      blob: "#059669",
+      trend: 3.7,
+      trendLabel: "vs last month"
     },
     {
-      label: "Low Stock Alerts",
-      value: stats?.lowStockCount !== undefined ? `${stats.lowStockCount} Items` : "0 Items",
-      icon: TrendingUp,
-      from: "#F43F5E",
-      to: "#FDA4AF",
-      blob: "#F43F5E",
+      label: "Low Stock Alert",
+      value: data?.stats?.lowStockCount || "0",
+      icon: AlertTriangle,
+      from: "#DC2626",
+      to: "#F87171",
+      blob: "#DC2626",
+      trend: -5.3,
+      trendLabel: "vs last month"
     },
   ];
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F3F5FA]">
-        <p className="text-sm font-medium text-slate-500 animate-pulse">Loading ERP Analytics...</p>
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600"></div>
+          <p className="mt-3 text-sm text-slate-500">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#F3F5FA]">
-        <p className="text-sm font-medium text-rose-500">Error: {error}</p>
+      <div className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="rounded-lg bg-red-50 px-6 py-4 text-red-700 border border-red-200">
+          <p className="text-sm font-medium">Error: {error}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#F3F5FA] to-[#EDF0F9] p-6 text-slate-900">
-      {/* Header + range filter */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div className="min-h-screen bg-slate-50 p-6 font-sans">
+      {/* Page Header */}
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">Analytics</p>
-          <h1 className="text-lg font-semibold text-slate-800">Reports</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+          <p className="text-sm text-slate-500">Welcome back! Here's your business overview</p>
         </div>
-        
-        {/* Action Group Container */}
-        <div className="flex items-center gap-2">
-          {/* Export CSV Action Trigger */}
-          <button
-            onClick={exportToCSV}
-            className="flex items-center gap-1.5 rounded-lg cursor-pointer bg-[#042ad1] px-3 py-2 text-sm font-medium text-white shadow-sm outline-none transition-all hover:bg-[#0732f5] active:scale-95"
-          >
-            <Download size={15} className="text-white-500" />
-            Export CSV
+        <div className="flex items-center gap-3">
+          <button className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:shadow">
+            Export Report
           </button>
-
-          <select
-            value={range}
-            onChange={(e) => setRange(e.target.value)}
-            className="w-44 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm outline-none transition-colors focus:border-[#2B54D6]/40"
-          >
-            <option>Last 7 days</option>
-            <option>Last 30 days</option>
-            <option>Last 7 months</option>
-            <option>This year</option>
-          </select>
+          <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow">
+            + Add Product
+          </button>
         </div>
       </div>
 
-      {/* Dynamic Stat cards */}
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {STATS_CARDS.map((s) => (
+      {/* Stat cards */}
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {STATS.map((s) => (
           <StatCard key={s.label} {...s} />
         ))}
       </div>
 
-      {/* Revenue trend + orders by status */}
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <div className="relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 transition-shadow duration-200 hover:shadow-lg">
-          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#2B54D6] opacity-[0.06] blur-3xl" />
-          <div className="relative mb-3 flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-800">Revenue trend</p>
+      {/* Row 1: Revenue Trend + Orders by Status */}
+      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Revenue Trend Chart */}
+        <div className="rounded-xl bg-white p-6 shadow-sm transition-all hover:shadow-md">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Revenue Trend</h3>
+              <p className="text-xs text-slate-500">Daily revenue performance</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button className="rounded-lg bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-100">
+                Weekly
+              </button>
+              <button className="rounded-lg px-3 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                Monthly
+              </button>
+              <button className="rounded-lg px-3 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+                Yearly
+              </button>
+            </div>
           </div>
-          <div className="relative h-56">
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={revenueData}>
+              <AreaChart data={data?.salesTrend || []}>
                 <defs>
-                  <linearGradient id="revenueStroke" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#2B54D6" />
-                    <stop offset="100%" stopColor="#4FD5F0" />
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid vertical={false} stroke="#EEF1F8" />
-                <XAxis
-                  dataKey="month"
-                  tickLine={false}
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                <XAxis 
+                  dataKey="day" 
                   axisLine={false}
-                  tick={{ fontSize: 11, fill: "#A3ABC2" }}
-                />
-                <YAxis
                   tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 11, fill: "#A3ABC2" }}
-                  tickFormatter={(v) => `$${v}`}
+                  tick={{ fontSize: 12, fill: '#6B7280' }}
                 />
-                <Tooltip
-                  formatter={(v) => `$${v.toLocaleString()}`}
+                <YAxis 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#6B7280' }}
+                  tickFormatter={(value) => `$${value}`}
+                />
+                <Tooltip 
                   contentStyle={{
-                    fontSize: 12,
-                    borderRadius: 10,
-                    border: "1px solid #EEF1F8",
+                    backgroundColor: 'white',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    padding: '8px 12px'
                   }}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="url(#revenueStroke)"
-                  strokeWidth={2.5}
-                  dot={{ r: 3, fill: "#2B54D6", strokeWidth: 0 }}
-                  activeDot={{ r: 5 }}
+                <Area 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#3B82F6" 
+                  strokeWidth={2}
+                  fill="url(#colorRevenue)" 
                 />
-              </LineChart>
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-100 bg-white p-5 transition-shadow duration-200 hover:shadow-lg">
-          <p className="mb-3 text-sm font-semibold text-slate-800">Orders by status</p>
-          <div className="h-56">
+        {/* Orders by Status - Pie Chart */}
+        <div className="rounded-xl bg-white p-6 shadow-sm transition-all hover:shadow-md">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Orders by Status</h3>
+              <p className="text-xs text-slate-500">Order distribution overview</p>
+            </div>
+            <ClockIcon size={18} className="text-slate-400" />
+          </div>
+          <div className="flex h-64 items-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={ordersByStatus}
+                  data={orderStatusData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={2}
                   dataKey="value"
-                  nameKey="name"
-                  innerRadius={45}
-                  outerRadius={75}
-                  paddingAngle={3}
                 >
-                  {ordersByStatus.map((entry, i) => (
-                    <Cell key={entry.name} fill={PIE_COLORS[i % PIE_COLORS.length]} stroke="none" />
+                  {orderStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    fontSize: 12,
-                    borderRadius: 10,
-                    border: "1px solid #EEF1F8",
+                    backgroundColor: 'white',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    padding: '8px 12px'
                   }}
                 />
-                <Legend
-                  verticalAlign="bottom"
-                  height={30}
-                  iconSize={8}
-                  iconType="circle"
-                  wrapperStyle={{ fontSize: 12 }}
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36}
+                  formatter={(value) => <span className="text-xs text-slate-600">{value}</span>}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -272,55 +297,211 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Top selling products */}
-      <div className="h-[340px] rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition-shadow duration-200 hover:shadow-lg">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm font-semibold text-slate-800">Top selling products</p>
-          <span className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Units sold</span>
-        </div>
-
-        <div className="h-[260px] w-full">
-          {topProducts && topProducts.length > 0 ? (
+      {/* Row 2: Top Selling Products + Low Stock */}
+      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Top Selling Products - Bar Chart */}
+        <div className="rounded-xl bg-white p-6 shadow-sm transition-all hover:shadow-md">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Top Selling Products</h3>
+              <p className="text-xs text-slate-500">Best performing products by sales</p>
+            </div>
+            <Star size={18} className="text-amber-400" />
+          </div>
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={topProducts}
+                data={topProductsData}
                 layout="vertical"
-                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+                margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               >
-                <CartesianGrid horizontal={false} stroke="#EEF1F8" />
-                <XAxis
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={false} />
+                <XAxis 
                   type="number"
-                  tickLine={false}
                   axisLine={false}
-                  tick={{ fontSize: 11, fill: "#A3ABC2" }}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: '#6B7280' }}
                 />
-                <YAxis
+                <YAxis 
                   type="category"
                   dataKey="name"
-                  tickLine={false}
                   axisLine={false}
-                  width={120}
-                  tick={{ fontSize: 12, fill: "#475569" }}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: '#6B7280' }}
+                  width={100}
                 />
                 <Tooltip
-                  formatter={(value, name, props) => [
-                    `${value} units · $${(props.payload.revenue || 0).toLocaleString()}`,
-                    "Sold",
-                  ]}
                   contentStyle={{
-                    fontSize: 12,
-                    borderRadius: 10,
-                    border: "1px solid #EEF1F8",
+                    backgroundColor: 'white',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    padding: '8px 12px'
+                  }}
+                  formatter={(value, name) => {
+                    if (name === 'sales') return [`${value} units`, 'Sales'];
+                    if (name === 'revenue') return [`$${value}`, 'Revenue'];
+                    return [value, name];
                   }}
                 />
-                <Bar dataKey="sold" fill="#2B54D6" radius={[0, 4, 4, 0]} barSize={22} />
+                <Bar 
+                  dataKey="sales" 
+                  fill="#3B82F6"
+                  radius={[0, 4, 4, 0]}
+                  barSize={16}
+                >
+                  {topProductsData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center text-center">
-              <p className="text-xs text-slate-400">No sales data recorded yet</p>
+          </div>
+        </div>
+
+        {/* Low Stock Section */}
+        <div className="rounded-xl bg-white p-6 shadow-sm transition-all hover:shadow-md">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Low Stock Alert</h3>
+              <p className="text-xs text-slate-500">Products requiring immediate attention</p>
             </div>
-          )}
+            <AlertTriangle size={18} className="text-red-400" />
+          </div>
+          <div className="space-y-3">
+            {data?.lowStockProducts?.map((item) => (
+              <div
+                key={item.name}
+                className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/50 p-3 transition-all hover:border-slate-200 hover:bg-slate-50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`h-2 w-2 rounded-full ${item.level === 'danger' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                  <span className="text-sm font-medium text-slate-700">{item.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClasses[item.level]}`}>
+                    {item.left} left
+                  </span>
+                  <button className="text-xs font-medium text-blue-600 hover:text-blue-700">
+                    Restock
+                  </button>
+                </div>
+              </div>
+            ))}
+            {(!data?.lowStockProducts || data.lowStockProducts.length === 0) && (
+              <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-6 text-center">
+                <div className="mb-2 flex justify-center">
+                  <div className="rounded-full bg-emerald-100 p-2">
+                    <svg className="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-emerald-700">All products are well-stocked</p>
+                <p className="text-xs text-emerald-600">No low stock items to display</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Row 3: Recent Orders + Recent Products */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Recent Orders */}
+        <div className="rounded-xl bg-white p-6 shadow-sm transition-all hover:shadow-md">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Recent Orders</h3>
+              <p className="text-xs text-slate-500">Latest transactions from your store</p>
+            </div>
+            <button className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline">
+              View All →
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="pb-2 text-left text-xs font-medium uppercase tracking-wider text-slate-400">Customer</th>
+                  <th className="pb-2 text-right text-xs font-medium uppercase tracking-wider text-slate-400">Amount</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {data?.recentOrders?.map((order) => (
+                  <tr key={order.id} className="group transition-colors hover:bg-slate-50/50">
+                    <td className="py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-600">
+                          {order.initials}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">{order.name}</p>
+                          <p className="text-xs text-slate-400">{order.id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 text-right text-sm font-semibold text-slate-900">
+                      {order.amount}
+                    </td>
+                  </tr>
+                ))}
+                {(!data?.recentOrders || data.recentOrders.length === 0) && (
+                  <tr>
+                    <td colSpan="2" className="py-6 text-center text-sm text-slate-400">
+                      No recent orders found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Recent Products */}
+        <div className="rounded-xl bg-white p-6 shadow-sm transition-all hover:shadow-md">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-900">Recent Products</h3>
+              <p className="text-xs text-slate-500">Newest additions to your inventory</p>
+            </div>
+            <button className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline">
+              View All →
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="pb-2 text-left text-xs font-medium uppercase tracking-wider text-slate-400">Product</th>
+                  <th className="pb-2 text-right text-xs font-medium uppercase tracking-wider text-slate-400">Price</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {data?.recentProducts?.map((product) => (
+                  <tr key={product.name} className="group transition-colors hover:bg-slate-50/50">
+                    <td className="py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                          <Package size={16} />
+                        </div>
+                        <span className="text-sm font-medium text-slate-900">{product.name}</span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-right text-sm font-semibold text-slate-900">
+                      {product.amount}
+                    </td>
+                  </tr>
+                ))}
+                {(!data?.recentProducts || data.recentProducts.length === 0) && (
+                  <tr>
+                    <td colSpan="2" className="py-6 text-center text-sm text-slate-400">
+                      No recent products added
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
