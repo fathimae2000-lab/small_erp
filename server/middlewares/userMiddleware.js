@@ -7,7 +7,7 @@ const protect = asyncHandler(async (req, res, next) => {
 
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
         try {
-            token = req.headers.authorization; // keep header format, verifyToken handles .replace()
+            token = req.headers.authorization;
 
             const result = await verifyToken(token);
 
