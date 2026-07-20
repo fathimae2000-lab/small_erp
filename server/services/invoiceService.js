@@ -1,12 +1,16 @@
 const saleRepository = require('../repositories/saleRepository');
 const Product = require('../models/Product'); 
-const Customer=require('../models/Customer')
+const Customer = require('../models/Customer');
+const Sale = require('../models/Sales'); 
 
-const processNewSale = async (saleData) => {
+const processNewSale = async (saleData, userId) => {
     let totalAmount = 0;
 
-    const customer=await Customer.findById(saleData.customer)
-    if(!customer) {
+    // Safely assign soldBy to prevent undefined errors
+    saleData.soldBy = userId;
+
+    const customer = await Customer.findById(saleData.customer);
+    if (!customer) {
         throw new Error(`Customer not found!`);
     }
 
@@ -31,9 +35,8 @@ const processNewSale = async (saleData) => {
     saleData.totalAmount = totalAmount;
 
     customer.totalSpent += totalAmount;
-customer.ordersCount += 1;
-await customer.save();
-
+    customer.ordersCount += 1;
+    await customer.save();
 
     return await saleRepository.createSaleRecord(saleData);
 };

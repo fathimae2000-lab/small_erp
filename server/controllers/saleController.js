@@ -5,7 +5,6 @@ const invoiceService = require('../services/invoiceService');
 // @route   GET /api/sales
 // @access  Protected (Admin / Manager / Staff)
 const getAllSalesController = asyncHandler(async (req, res) => {
-    // CORRECTED: Call the actual service function name
     const sales = await invoiceService.getSalesReport(); 
 
     res.status(200).json(sales);
@@ -15,12 +14,18 @@ const getAllSalesController = asyncHandler(async (req, res) => {
 // @route   POST /api/sales
 // @access  Protected (Admin / Manager / Staff)
 const createSaleController = asyncHandler(async (req, res) => {
+    // Safety check to ensure req.user exists and has an _id
+    if (!req.user || !req.user._id) {
+        res.status(401);
+        throw new Error('Not authorized, user token is missing or invalid');
+    }
+
     const saleData = {
-        ...req.body,
-        soldBy: req.user._id 
+        ...req.body
     };
 
-    const newInvoice = await invoiceService.processNewSale(saleData);
+    // Pass req.user._id as the second argument to the service
+    const newInvoice = await invoiceService.processNewSale(saleData, req.user._id);
 
     res.status(201).json({
         success: true,

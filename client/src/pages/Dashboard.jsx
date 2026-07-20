@@ -6,19 +6,11 @@ import {
   ShoppingCart, 
   Package, 
   AlertTriangle, 
-  ChevronDown, 
   TrendingUp, 
-  Users, 
-  Clock, 
   Star,
-  CheckCircle,
-  XCircle,
-  Clock as ClockIcon,
-  Zap
+  Clock as ClockIcon
 } from "lucide-react";
 import {
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -48,7 +40,6 @@ function StatCard({ label, value, icon: Icon, from, to, blob, trend, trendLabel 
         className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full opacity-[0.04] blur-2xl transition-opacity duration-300 group-hover:opacity-10"
         style={{ backgroundColor: blob }}
       />
-
       <div className="relative flex items-start justify-between">
         <div className="space-y-1">
           <p className="text-xs font-medium uppercase tracking-wider text-slate-400">{label}</p>
@@ -75,54 +66,70 @@ function StatCard({ label, value, icon: Icon, from, to, blob, trend, trendLabel 
 
 export default function Dashboard() {
   const dispatch = useDispatch();
-
   const { data, loading, error } = useSelector((state) => state.dashboard);
 
   useEffect(() => {
     dispatch(fetchDashboardData());
   }, [dispatch]);
 
-  // All data comes from Redux - NO MOCK DATA
+  // Extract data from Redux - ALL DYNAMIC, NO MOCKS
   const salesTrendData = data?.salesTrend || [];
   const orderStatusData = data?.orderStatus || [];
   const topProductsData = data?.topProducts || [];
+  const lowStockProducts = data?.lowStockProducts || [];
+  const recentOrders = data?.recentOrders || [];
+  const recentProducts = data?.recentProducts || [];
+  const stats = data?.stats || {};
+
+  // Check if we have any data at all
+  const hasData = salesTrendData.length > 0 || 
+                  orderStatusData.length > 0 || 
+                  topProductsData.length > 0 ||
+                  lowStockProducts.length > 0 ||
+                  recentOrders.length > 0 ||
+                  recentProducts.length > 0 ||
+                  stats.totalRevenue > 0;
 
   const STATS = [
     {
       label: "Total Revenue",
-      value: data?.stats?.totalRevenue ? `$${data.stats.totalRevenue.toLocaleString()}` : "$0",
+      value: stats.totalRevenue ? `$${stats.totalRevenue.toLocaleString()}` : "$0",
       icon: DollarSign,
       from: "#2563EB",
       to: "#60A5FA",
       blob: "#2563EB",
-      trend: data?.stats?.revenueGrowth,
+      trend: stats.revenueGrowth,
+      trendLabel: "vs last month"
     },
     {
       label: "Total Orders",
-      value: data?.stats?.totalOrders || "0",
+      value: stats.totalOrders?.toString() || "0",
       icon: ShoppingCart,
       from: "#7C3AED",
       to: "#A78BFA",
       blob: "#7C3AED",
-      trend: data?.stats?.ordersGrowth,
+      trend: stats.ordersGrowth,
+      trendLabel: "vs last month"
     },
     {
       label: "Products",
-      value: data?.stats?.totalProducts || "0",
+      value: stats.totalProducts?.toString() || "0",
       icon: Package,
       from: "#059669",
       to: "#34D399",
       blob: "#059669",
-      trend: data?.stats?.productsGrowth,
+      trend: stats.productsGrowth,
+      trendLabel: "vs last month"
     },
     {
       label: "Low Stock Alert",
-      value: data?.stats?.lowStockCount || "0",
+      value: stats.lowStockCount?.toString() || "0",
       icon: AlertTriangle,
       from: "#DC2626",
       to: "#F87171",
       blob: "#DC2626",
-      trend: data?.stats?.lowStockChange,
+      trend: stats.lowStockChange,
+      trendLabel: "vs last month"
     },
   ];
 
@@ -140,8 +147,15 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="rounded-lg bg-red-50 px-6 py-4 text-red-700 border border-red-200">
-          <p className="text-sm font-medium">Error: {error}</p>
+        <div className="rounded-lg bg-red-50 px-6 py-4 text-red-700 border border-red-200 max-w-md">
+          <p className="text-sm font-medium">Error loading dashboard</p>
+          <p className="text-xs text-red-600 mt-1">{error}</p>
+          <button 
+            onClick={() => dispatch(fetchDashboardData())}
+            className="mt-3 text-xs font-medium text-blue-600 hover:text-blue-700"
+          >
+            Try Again →
+          </button>
         </div>
       </div>
     );
@@ -153,7 +167,9 @@ export default function Dashboard() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-          <p className="text-sm text-slate-500">Welcome back! Here's your business overview</p>
+          <p className="text-sm text-slate-500">
+            {hasData ? "Welcome back! Here's your business overview" : "No data available yet"}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <button className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:shadow">
@@ -224,6 +240,7 @@ export default function Dashboard() {
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                       padding: '8px 12px'
                     }}
+                    formatter={(value) => [`$${value}`, 'Revenue']}
                   />
                   <Area 
                     type="monotone" 
@@ -281,7 +298,7 @@ export default function Dashboard() {
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                       padding: '8px 12px'
                     }}
-                    formatter={(value) => [`${value} orders`, '']}
+                    formatter={(value, name) => [`${value} orders`, name]}
                   />
                   <Legend 
                     verticalAlign="bottom" 
@@ -304,6 +321,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Rest of your component remains the same */}
       {/* Row 2: Top Selling Products + Low Stock */}
       <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Top Selling Products - Dynamic Data */}
@@ -346,11 +364,7 @@ export default function Dashboard() {
                       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                       padding: '8px 12px'
                     }}
-                    formatter={(value, name) => {
-                      if (name === 'sales') return [`${value} units`, 'Sales'];
-                      if (name === 'revenue') return [`$${value}`, 'Revenue'];
-                      return [value, name];
-                    }}
+                    formatter={(value) => [`${value} units`, 'Sales']}
                   />
                   <Bar 
                     dataKey="sales" 
@@ -385,12 +399,12 @@ export default function Dashboard() {
               <p className="text-xs text-slate-500">Products requiring immediate attention</p>
             </div>
             <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
-              {data?.lowStockProducts?.length || 0} items
+              {lowStockProducts.length} items
             </span>
           </div>
           <div className="space-y-3">
-            {data?.lowStockProducts?.length > 0 ? (
-              data.lowStockProducts.map((item) => (
+            {lowStockProducts.length > 0 ? (
+              lowStockProducts.map((item) => (
                 <div
                   key={item.name}
                   className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/50 p-3 transition-all hover:border-slate-200 hover:bg-slate-50"
@@ -448,8 +462,8 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {data?.recentOrders?.length > 0 ? (
-                  data.recentOrders.map((order) => (
+                {recentOrders.length > 0 ? (
+                  recentOrders.map((order) => (
                     <tr key={order.id} className="group transition-colors hover:bg-slate-50/50">
                       <td className="py-3">
                         <div className="flex items-center gap-3">
@@ -499,8 +513,8 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {data?.recentProducts?.length > 0 ? (
-                  data.recentProducts.map((product) => (
+                {recentProducts.length > 0 ? (
+                  recentProducts.map((product) => (
                     <tr key={product.name} className="group transition-colors hover:bg-slate-50/50">
                       <td className="py-3">
                         <div className="flex items-center gap-3">
