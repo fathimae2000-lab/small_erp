@@ -68,8 +68,6 @@ export default function Dashboard() {
       from: "#2563EB",
       to: "#60A5FA",
       blob: "#2563EB",
-      trend: 12.5,
-      trendLabel: "vs last month"
     },
     {
       label: "Total Orders",
@@ -78,8 +76,6 @@ export default function Dashboard() {
       from: "#7C3AED",
       to: "#A78BFA",
       blob: "#7C3AED",
-      trend: 8.2,
-      trendLabel: "vs last month"
     },
     {
       label: "Products",
@@ -88,8 +84,6 @@ export default function Dashboard() {
       from: "#059669",
       to: "#34D399",
       blob: "#059669",
-      trend: 3.7,
-      trendLabel: "vs last month"
     },
     {
       label: "Low Stock Alert",
@@ -98,8 +92,6 @@ export default function Dashboard() {
       from: "#DC2626",
       to: "#F87171",
       blob: "#DC2626",
-      trend: -5.3,
-      trendLabel: "vs last month"
     },
   ];
 
