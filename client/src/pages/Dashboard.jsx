@@ -53,7 +53,7 @@ function StatCard({ label, value, icon: Icon, from, to, blob, trend, trendLabel 
         <div className="space-y-1">
           <p className="text-xs font-medium uppercase tracking-wider text-slate-400">{label}</p>
           <p className="text-2xl font-bold text-slate-900">{value}</p>
-          {trend && (
+          {trend !== undefined && trend !== null && (
             <div className="flex items-center gap-1.5">
               <span className={`text-xs font-medium ${trend > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                 {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
@@ -82,23 +82,10 @@ export default function Dashboard() {
     dispatch(fetchDashboardData());
   }, [dispatch]);
 
-  // Dynamic data from Redux with fallbacks
+  // All data comes from Redux - NO MOCK DATA
   const salesTrendData = data?.salesTrend || [];
-  const orderStatusData = data?.orderStatus || [
-    { name: 'Completed', value: 45, color: '#10B981' },
-    { name: 'Processing', value: 28, color: '#3B82F6' },
-    { name: 'Pending', value: 15, color: '#F59E0B' },
-    { name: 'Cancelled', value: 8, color: '#EF4444' },
-    { name: 'Refunded', value: 4, color: '#8B5CF6' },
-  ];
-  
-  const topProductsData = data?.topProducts || [
-    { name: 'Wireless Headphones', sales: 245, revenue: 12250 },
-    { name: 'Smart Watch', sales: 189, revenue: 9450 },
-    { name: 'Laptop Bag', sales: 156, revenue: 7800 },
-    { name: 'USB-C Hub', sales: 134, revenue: 6700 },
-    { name: 'Phone Case', sales: 98, revenue: 4900 },
-  ];
+  const orderStatusData = data?.orderStatus || [];
+  const topProductsData = data?.topProducts || [];
 
   const STATS = [
     {
@@ -108,8 +95,7 @@ export default function Dashboard() {
       from: "#2563EB",
       to: "#60A5FA",
       blob: "#2563EB",
-      trend: data?.stats?.revenueGrowth || 12.5,
-      trendLabel: "vs last month"
+      trend: data?.stats?.revenueGrowth,
     },
     {
       label: "Total Orders",
@@ -118,8 +104,7 @@ export default function Dashboard() {
       from: "#7C3AED",
       to: "#A78BFA",
       blob: "#7C3AED",
-      trend: data?.stats?.ordersGrowth || 8.2,
-      trendLabel: "vs last month"
+      trend: data?.stats?.ordersGrowth,
     },
     {
       label: "Products",
@@ -128,8 +113,7 @@ export default function Dashboard() {
       from: "#059669",
       to: "#34D399",
       blob: "#059669",
-      trend: data?.stats?.productsGrowth || 3.7,
-      trendLabel: "vs last month"
+      trend: data?.stats?.productsGrowth,
     },
     {
       label: "Low Stock Alert",
@@ -138,8 +122,7 @@ export default function Dashboard() {
       from: "#DC2626",
       to: "#F87171",
       blob: "#DC2626",
-      trend: data?.stats?.lowStockChange || -5.3,
-      trendLabel: "vs last month"
+      trend: data?.stats?.lowStockChange,
     },
   ];
 
@@ -406,26 +389,27 @@ export default function Dashboard() {
             </span>
           </div>
           <div className="space-y-3">
-            {data?.lowStockProducts?.map((item) => (
-              <div
-                key={item.name}
-                className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/50 p-3 transition-all hover:border-slate-200 hover:bg-slate-50"
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`h-2 w-2 rounded-full ${item.level === 'danger' ? 'bg-red-500' : 'bg-amber-500'}`} />
-                  <span className="text-sm font-medium text-slate-700">{item.name}</span>
+            {data?.lowStockProducts?.length > 0 ? (
+              data.lowStockProducts.map((item) => (
+                <div
+                  key={item.name}
+                  className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/50 p-3 transition-all hover:border-slate-200 hover:bg-slate-50"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`h-2 w-2 rounded-full ${item.level === 'danger' ? 'bg-red-500' : 'bg-amber-500'}`} />
+                    <span className="text-sm font-medium text-slate-700">{item.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClasses[item.level]}`}>
+                      {item.left} left
+                    </span>
+                    <button className="text-xs font-medium text-blue-600 hover:text-blue-700">
+                      Restock
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClasses[item.level]}`}>
-                    {item.left} left
-                  </span>
-                  <button className="text-xs font-medium text-blue-600 hover:text-blue-700">
-                    Restock
-                  </button>
-                </div>
-              </div>
-            ))}
-            {(!data?.lowStockProducts || data.lowStockProducts.length === 0) && (
+              ))
+            ) : (
               <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-6 text-center">
                 <div className="mb-2 flex justify-center">
                   <div className="rounded-full bg-emerald-100 p-2">
@@ -464,25 +448,26 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {data?.recentOrders?.map((order) => (
-                  <tr key={order.id} className="group transition-colors hover:bg-slate-50/50">
-                    <td className="py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-600">
-                          {order.initials}
+                {data?.recentOrders?.length > 0 ? (
+                  data.recentOrders.map((order) => (
+                    <tr key={order.id} className="group transition-colors hover:bg-slate-50/50">
+                      <td className="py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-xs font-semibold text-blue-600">
+                            {order.initials}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-slate-900">{order.name}</p>
+                            <p className="text-xs text-slate-400">{order.id}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-slate-900">{order.name}</p>
-                          <p className="text-xs text-slate-400">{order.id}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3 text-right text-sm font-semibold text-slate-900">
-                      {order.amount}
-                    </td>
-                  </tr>
-                ))}
-                {(!data?.recentOrders || data.recentOrders.length === 0) && (
+                      </td>
+                      <td className="py-3 text-right text-sm font-semibold text-slate-900">
+                        {order.amount}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
                   <tr>
                     <td colSpan="2" className="py-6 text-center text-sm text-slate-400">
                       No recent orders found
@@ -514,22 +499,23 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {data?.recentProducts?.map((product) => (
-                  <tr key={product.name} className="group transition-colors hover:bg-slate-50/50">
-                    <td className="py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                          <Package size={16} />
+                {data?.recentProducts?.length > 0 ? (
+                  data.recentProducts.map((product) => (
+                    <tr key={product.name} className="group transition-colors hover:bg-slate-50/50">
+                      <td className="py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                            <Package size={16} />
+                          </div>
+                          <span className="text-sm font-medium text-slate-900">{product.name}</span>
                         </div>
-                        <span className="text-sm font-medium text-slate-900">{product.name}</span>
-                      </div>
-                    </td>
-                    <td className="py-3 text-right text-sm font-semibold text-slate-900">
-                      {product.amount}
-                    </td>
-                  </tr>
-                ))}
-                {(!data?.recentProducts || data.recentProducts.length === 0) && (
+                      </td>
+                      <td className="py-3 text-right text-sm font-semibold text-slate-900">
+                        {product.amount}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
                   <tr>
                     <td colSpan="2" className="py-6 text-center text-sm text-slate-400">
                       No recent products added
