@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchDashboardData } from "../redux/slices/dashboardSlice"; 
 import { 
@@ -7,8 +7,7 @@ import {
   Package, 
   AlertTriangle, 
   TrendingUp, 
-  Star,
-  Clock as ClockIcon
+  Star
 } from "lucide-react";
 import {
   XAxis,
@@ -18,12 +17,9 @@ import {
   ResponsiveContainer,
   Area,
   AreaChart,
-  PieChart,
-  Pie,
-  Cell,
   BarChart,
   Bar,
-  Legend
+  Cell
 } from "recharts";
 
 const badgeClasses = {
@@ -32,6 +28,14 @@ const badgeClasses = {
 };
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+
+const formatCurrency = (amount) => {
+  if (amount === undefined || amount === null) return "$0.00";
+  const numericValue = typeof amount === 'string' 
+    ? parseFloat(amount.replace(/[^0-9.-]+/g, "")) 
+    : amount;
+  return isNaN(numericValue) ? "$0.00" : `$${numericValue.toFixed(2)}`;
+};
 
 function StatCard({ label, value, icon: Icon, from, to, blob, trend, trendLabel }) {
   return (
@@ -67,33 +71,32 @@ function StatCard({ label, value, icon: Icon, from, to, blob, trend, trendLabel 
 export default function Dashboard() {
   const dispatch = useDispatch();
   const { data, loading, error } = useSelector((state) => state.dashboard);
+  
+  // Set default initial view to monthly since weekly is removed
+  const [timeRange, setTimeRange] = useState("monthly");
 
   useEffect(() => {
-    dispatch(fetchDashboardData());
-  }, [dispatch]);
+    dispatch(fetchDashboardData(timeRange));
+  }, [dispatch, timeRange]);
 
-  // Extract data from Redux - ALL DYNAMIC, NO MOCKS
   const salesTrendData = data?.salesTrend || [];
-  const orderStatusData = data?.orderStatus || [];
   const topProductsData = data?.topProducts || [];
   const lowStockProducts = data?.lowStockProducts || [];
   const recentOrders = data?.recentOrders || [];
   const recentProducts = data?.recentProducts || [];
   const stats = data?.stats || {};
 
-  // Check if we have any data at all
   const hasData = salesTrendData.length > 0 || 
-                  orderStatusData.length > 0 || 
-                  topProductsData.length > 0 ||
-                  lowStockProducts.length > 0 ||
-                  recentOrders.length > 0 ||
-                  recentProducts.length > 0 ||
-                  stats.totalRevenue > 0;
+                 topProductsData.length > 0 ||
+                 lowStockProducts.length > 0 ||
+                 recentOrders.length > 0 ||
+                 recentProducts.length > 0 ||
+                 stats.totalRevenue > 0;
 
   const STATS = [
     {
       label: "Total Revenue",
-      value: stats.totalRevenue ? `$${stats.totalRevenue.toLocaleString()}` : "$0",
+      value: stats.totalRevenue ? formatCurrency(stats.totalRevenue) : "$0.00",
       icon: DollarSign,
       from: "#2563EB",
       to: "#60A5FA",
@@ -151,7 +154,7 @@ export default function Dashboard() {
           <p className="text-sm font-medium">Error loading dashboard</p>
           <p className="text-xs text-red-600 mt-1">{error}</p>
           <button 
-            onClick={() => dispatch(fetchDashboardData())}
+            onClick={() => dispatch(fetchDashboardData(timeRange))}
             className="mt-3 text-xs font-medium text-blue-600 hover:text-blue-700"
           >
             Try Again →
@@ -188,28 +191,37 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Row 1: Revenue Trend + Orders by Status */}
-      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Revenue Trend Chart - Dynamic Data */}
+      {/* Revenue Overview Chart */}
+      <div className="mb-6">
         <div className="rounded-xl bg-white p-6 shadow-sm transition-all hover:shadow-md">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold text-slate-900">Revenue Overview</h3>
-              <p className="text-xs text-slate-500">Daily revenue trends for the past 7 days</p>
+              <h3 className="text-sm font-semibold text-slate-900">Revenue Trend</h3>
+              <p className="text-xs text-slate-500">
+                {timeRange === 'monthly' && 'Revenue performance for the month'}
+                {timeRange === 'yearly' && 'Monthly revenue performance for the year'}
+              </p>
             </div>
             <div className="flex items-center gap-2">
-              <button className="rounded-lg bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-100">
-                Weekly
-              </button>
-              <button className="rounded-lg px-3 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+              <button 
+                onClick={() => setTimeRange("monthly")}
+                className={`rounded-lg px-3 py-1 text-xs font-medium transition-all ${
+                  timeRange === 'monthly' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'
+                }`}
+              >
                 Monthly
               </button>
-              <button className="rounded-lg px-3 py-1 text-xs font-medium text-slate-500 hover:bg-slate-50">
+              <button 
+                onClick={() => setTimeRange("yearly")}
+                className={`rounded-lg px-3 py-1 text-xs font-medium transition-all ${
+                  timeRange === 'yearly' ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50'
+                }`}
+              >
                 Yearly
               </button>
             </div>
           </div>
-          <div className="h-64">
+          <div className="h-80">
             {salesTrendData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={salesTrendData}>
@@ -221,99 +233,24 @@ export default function Dashboard() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
                   <XAxis 
-                    dataKey="day" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#6B7280' }}
+                    dataKey={timeRange === 'yearly' ? 'month' : 'date'} 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 12, fill: '#6B7280' }} 
                   />
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#6B7280' }}
-                    tickFormatter={(value) => `$${value}`}
-                  />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} tickFormatter={(value) => `$${value}`} />
                   <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #E5E7EB',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                      padding: '8px 12px'
-                    }}
-                    formatter={(value) => [`$${value}`, 'Revenue']}
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '8px 12px' }}
+                    formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Revenue']}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke="#3B82F6" 
-                    strokeWidth={2}
-                    fill="url(#colorRevenue)" 
-                  />
+                  <Area type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={2} fill="url(#colorRevenue)" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
-                  <div className="rounded-full bg-slate-100 p-3">
-                    <TrendingUp size={24} className="text-slate-400" />
-                  </div>
-                  <p className="mt-2 text-sm text-slate-500">No revenue data available</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Orders by Status - Dynamic Data */}
-        <div className="rounded-xl bg-white p-6 shadow-sm transition-all hover:shadow-md">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-900">Orders by Status</h3>
-              <p className="text-xs text-slate-500">Order distribution overview</p>
-            </div>
-            <ClockIcon size={18} className="text-slate-400" />
-          </div>
-          <div className="h-64">
-            {orderStatusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={orderStatusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    {orderStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #E5E7EB',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                      padding: '8px 12px'
-                    }}
-                    formatter={(value, name) => [`${value} orders`, name]}
-                  />
-                  <Legend 
-                    verticalAlign="bottom" 
-                    height={36}
-                    formatter={(value) => <span className="text-xs text-slate-600">{value}</span>}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <div className="text-center">
-                  <div className="rounded-full bg-slate-100 p-3">
-                    <ShoppingCart size={24} className="text-slate-400" />
-                  </div>
-                  <p className="mt-2 text-sm text-slate-500">No order status data available</p>
+                  <div className="rounded-full bg-slate-100 p-3"><TrendingUp size={24} className="text-slate-400" /></div>
+                  <p className="mt-2 text-sm text-slate-500">No revenue data available for this period</p>
                 </div>
               </div>
             )}
@@ -321,10 +258,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Rest of your component remains the same */}
-      {/* Row 2: Top Selling Products + Low Stock */}
+      {/* Top Selling Products + Low Stock */}
       <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Top Selling Products - Dynamic Data */}
         <div className="rounded-xl bg-white p-6 shadow-sm transition-all hover:shadow-md">
           <div className="mb-4 flex items-center justify-between">
             <div>
@@ -336,42 +271,12 @@ export default function Dashboard() {
           <div className="h-64">
             {topProductsData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={topProductsData}
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
+                <BarChart data={topProductsData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" horizontal={false} />
-                  <XAxis 
-                    type="number"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#6B7280' }}
-                  />
-                  <YAxis 
-                    type="category"
-                    dataKey="name"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 11, fill: '#6B7280' }}
-                    width={100}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #E5E7EB',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                      padding: '8px 12px'
-                    }}
-                    formatter={(value) => [`${value} units`, 'Sales']}
-                  />
-                  <Bar 
-                    dataKey="sales" 
-                    fill="#3B82F6"
-                    radius={[0, 4, 4, 0]}
-                    barSize={16}
-                  >
+                  <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
+                  <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#6B7280' }} width={100} />
+                  <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E5E7EB', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', padding: '8px 12px' }} formatter={(value) => [`${value} units`, 'Sales']} />
+                  <Bar dataKey="sales" fill="#3B82F6" radius={[0, 4, 4, 0]} barSize={16}>
                     {topProductsData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
@@ -381,9 +286,7 @@ export default function Dashboard() {
             ) : (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
-                  <div className="rounded-full bg-slate-100 p-3">
-                    <Package size={24} className="text-slate-400" />
-                  </div>
+                  <div className="rounded-full bg-slate-100 p-3"><Package size={24} className="text-slate-400" /></div>
                   <p className="mt-2 text-sm text-slate-500">No product data available</p>
                 </div>
               </div>
@@ -391,7 +294,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Low Stock Section */}
         <div className="rounded-xl bg-white p-6 shadow-sm transition-all hover:shadow-md">
           <div className="mb-4 flex items-center justify-between">
             <div>
@@ -405,10 +307,7 @@ export default function Dashboard() {
           <div className="space-y-3">
             {lowStockProducts.length > 0 ? (
               lowStockProducts.map((item) => (
-                <div
-                  key={item.name}
-                  className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/50 p-3 transition-all hover:border-slate-200 hover:bg-slate-50"
-                >
+                <div key={item.name} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/50 p-3 transition-all hover:border-slate-200 hover:bg-slate-50">
                   <div className="flex items-center gap-3">
                     <div className={`h-2 w-2 rounded-full ${item.level === 'danger' ? 'bg-red-500' : 'bg-amber-500'}`} />
                     <span className="text-sm font-medium text-slate-700">{item.name}</span>
@@ -417,23 +316,13 @@ export default function Dashboard() {
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${badgeClasses[item.level]}`}>
                       {item.left} left
                     </span>
-                    <button className="text-xs font-medium text-blue-600 hover:text-blue-700">
-                      Restock
-                    </button>
+                    <button className="text-xs font-medium text-blue-600 hover:text-blue-700">Restock</button>
                   </div>
                 </div>
               ))
             ) : (
               <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-6 text-center">
-                <div className="mb-2 flex justify-center">
-                  <div className="rounded-full bg-emerald-100 p-2">
-                    <svg className="h-6 w-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                </div>
                 <p className="text-sm font-medium text-emerald-700">All products are well-stocked</p>
-                <p className="text-xs text-emerald-600">No low stock items to display</p>
               </div>
             )}
           </div>
@@ -442,16 +331,13 @@ export default function Dashboard() {
 
       {/* Recent Orders + Recent Products */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Recent Orders */}
         <div className="rounded-xl bg-white p-6 shadow-sm transition-all hover:shadow-md">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h3 className="text-sm font-semibold text-slate-900">Recent Orders</h3>
               <p className="text-xs text-slate-500">Latest transactions from your store</p>
             </div>
-            <button className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline">
-              View All →
-            </button>
+            <button className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline">View All →</button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -477,15 +363,13 @@ export default function Dashboard() {
                         </div>
                       </td>
                       <td className="py-3 text-right text-sm font-semibold text-slate-900">
-                        {order.amount}
+                        {formatCurrency(order.amount)}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="2" className="py-6 text-center text-sm text-slate-400">
-                      No recent orders found
-                    </td>
+                    <td colSpan="2" className="py-6 text-center text-sm text-slate-400">No recent orders found</td>
                   </tr>
                 )}
               </tbody>
@@ -493,16 +377,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Products */}
         <div className="rounded-xl bg-white p-6 shadow-sm transition-all hover:shadow-md">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h3 className="text-sm font-semibold text-slate-900">Recent Products</h3>
               <p className="text-xs text-slate-500">Newest additions to your inventory</p>
             </div>
-            <button className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline">
-              View All →
-            </button>
+            <button className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline">View All →</button>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -525,15 +406,13 @@ export default function Dashboard() {
                         </div>
                       </td>
                       <td className="py-3 text-right text-sm font-semibold text-slate-900">
-                        {product.amount}
+                        {formatCurrency(product.amount)}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="2" className="py-6 text-center text-sm text-slate-400">
-                      No recent products added
-                    </td>
+                    <td colSpan="2" className="py-6 text-center text-sm text-slate-400">No recent products added</td>
                   </tr>
                 )}
               </tbody>

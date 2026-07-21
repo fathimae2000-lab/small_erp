@@ -5,9 +5,10 @@ const API_URL = `${import.meta.env.VITE_API_URL}/api/dashboard`;
 
 export const fetchDashboardData = createAsyncThunk(
   "dashboard/fetchDashboardData",
-  async (_, { rejectWithValue }) => {
+  async (timeRange = "weekly", { rejectWithValue }) => {
     try {
-      const response = await axios.get(API_URL, {
+      // Pass timeRange as a query parameter (?range=weekly/monthly/yearly)
+      const response = await axios.get(`${API_URL}?range=${timeRange}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`, 
         },
@@ -31,10 +32,10 @@ const dashboardSlice = createSlice({
         totalProducts: 0,
         lowStockCount: 0,
       },
-      salesTrend: [],       
+      salesTrend: [],      
       lowStockProducts: [], 
-      recentOrders: [],     
-      recentProducts: [],   
+      recentOrders: [],    
+      recentProducts: [],  
     },
     loading: false,
     error: null,

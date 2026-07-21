@@ -199,7 +199,7 @@ const filteredOrders = orders.filter((order) => {
         )}
       </div>
 
-      <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
+      <div className="mt-4 flex items-center justify-around text-sm text-slate-500">
         <span>Showing {filteredOrders.length} of {totalCount} records</span>
         <div className="flex items-center gap-1.5">
           <button className="rounded-md border border-slate-200 bg-white p-1.5 text-slate-500 shadow-sm transition-colors hover:border-[#2B54D6]/30 hover:text-[#2B54D6]">

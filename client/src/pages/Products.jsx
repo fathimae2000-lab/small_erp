@@ -58,7 +58,7 @@ export default function Products() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null)
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 3;
+  const itemsPerPage = 4;
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
 
@@ -292,7 +292,7 @@ export default function Products() {
           </table>
         </div>
 
-        <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
+        <div className="mt-4 flex items-center justify-around text-sm text-slate-500">
           <span>
             Showing {filtered.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-
             {Math.min(currentPage * itemsPerPage, filtered.length)} of {filtered.length}

@@ -1,8 +1,10 @@
-const Order = require("../models/Sales"); 
-const Product = require("../models/Product"); 
+const Order = require("../models/Sales");
+const Product = require("../models/Product");
 
 const getDashboardData = async (req, res) => {
   try {
+    const { range = "monthly" } = req.query;
+
     const totalProducts = await Product.countDocuments();
     const lowStockCount = await Product.countDocuments({ stock: { $lte: 5 } });
 
@@ -19,17 +21,60 @@ const getDashboardData = async (req, res) => {
     const totalRevenue = orderStats[0]?.totalRevenue || 0;
     const totalOrders = orderStats[0]?.totalOrders || 0;
 
-    const salesTrend = [
-      { day: "Mon", value: 1200 },
-      { day: "Tue", value: 1900 },
-      { day: "Wed", value: 1500 },
-      { day: "Thu", value: 2200 },
-      { day: "Fri", value: 1800 },
-      { day: "Sat", value: 2600 },
-      { day: "Sun", value: 2100 },
-    ];
+    // --- Build salesTrend based on range ---
+    let salesTrend = [];
 
-    // 3. LOW STOCK PRODUCTS LIST
+    if (range === "yearly") {
+      // Fixed window: 2025–2030
+      const startYear = 2025;
+      const endYear = 2030;
+
+      const yearly = await Order.aggregate([
+        {
+          $match: {
+            createdAt: {
+              $gte: new Date(startYear, 0, 1),
+              $lt: new Date(endYear + 1, 0, 1)
+            }
+          }
+        },
+        {
+          $group: {
+            _id: { $year: "$createdAt" },
+            value: { $sum: "$totalAmount" }
+          }
+        },
+        { $sort: { "_id": 1 } }
+      ]);
+
+      salesTrend = Array.from({ length: endYear - startYear + 1 }, (_, i) => {
+        const year = startYear + i;
+        const found = yearly.find(y => y._id === year);
+        return { month: `${year}`, value: found ? found.value : 0 };
+      });
+
+    } else {
+      // Monthly view: group by month for the current year
+      const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+
+      const monthly = await Order.aggregate([
+        { $match: { createdAt: { $gte: startOfYear } } },
+        {
+          $group: {
+            _id: { $month: "$createdAt" },
+            value: { $sum: "$totalAmount" }
+          }
+        },
+        { $sort: { "_id": 1 } }
+      ]);
+
+      const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      salesTrend = monthNames.map((name, idx) => {
+        const found = monthly.find(m => m._id === idx + 1);
+        return { date: name, value: found ? found.value : 0 };
+      });
+    }
+
     const rawLowStock = await Product.find({ stock: { $lte: 10 } }).limit(5);
     const lowStockProducts = rawLowStock.map(p => ({
       name: p.name,
@@ -37,16 +82,18 @@ const getDashboardData = async (req, res) => {
       level: p.stock <= 3 ? "danger" : "warning"
     }));
 
-    // 4. RECENT ORDERS LIST
-    const rawRecentOrders = await Order.find().sort({ createdAt: -1 }).limit(3);
+    const rawRecentOrders = await Order.find()
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .populate('customer', 'name');
+
     const recentOrders = rawRecentOrders.map(o => ({
       id: `#${o._id.toString().slice(-4)}`,
-      name: o.customerName || "Walk-in Customer",
-      initials: (o.customerName || "WC").split(" ").map(n => n[0]).join("").toUpperCase(),
+      name: o.customer?.name || "Walk-in Customer",
+      initials: (o.customer?.name || "WC").split(" ").map(n => n[0]).join("").toUpperCase(),
       amount: `$${o.totalAmount}`
     }));
 
-    // 5. RECENT PRODUCTS LIST
     const rawRecentProducts = await Product.find().sort({ createdAt: -1 }).limit(3);
     const recentProducts = rawRecentProducts.map(p => ({
       name: p.name,

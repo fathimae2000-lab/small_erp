@@ -223,7 +223,7 @@ export default function Users() {
         </div>
 
         {/* Pagination */}
-        <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
+        <div className="mt-4 flex items-center justify-around text-sm text-slate-500">
           <span>
             Showing {filtered.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}-
             {Math.min(currentPage * itemsPerPage, filtered.length)} of {filtered.length}
