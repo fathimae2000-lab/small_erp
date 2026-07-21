@@ -13,8 +13,9 @@ const cors = require('cors');
 
 app.use(cors({
   origin: [
-    'http://localhost:5173',  
-    'https://small-erp.vercel.app'  
+    'http://localhost:5173',
+    'https://small-erp.vercel.app',
+    'https://small-erp-3voq-eta.vercel.app'
   ],
   credentials: true
 }));
